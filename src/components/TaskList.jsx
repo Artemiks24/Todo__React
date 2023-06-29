@@ -15,6 +15,8 @@ function TaskList({
   setEditingText,
   editingText,
   setNewTodos,
+  startTimer,
+  stopTimer,
 }) {
   return (
     <section className="main">
@@ -31,6 +33,8 @@ function TaskList({
             setTodos={setTodos}
             removeTask={removeTask}
             setNewTodos={setNewTodos}
+            startTimer={startTimer}
+            stopTimer={stopTimer}
           />
         ))}
       </ul>

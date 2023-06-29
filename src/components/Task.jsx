@@ -11,27 +11,16 @@ class Task extends Component {
     this.state = {
       editingText: '',
     }
-    this.stopTimer = this.stopTimer.bind(this)
-    this.handlePlayButtonClick = this.handlePlayButtonClick.bind(this)
   }
 
-  componentDidMount() {
-    const { todo } = this.props
-    const { isRun } = todo
-    if (isRun) {
-      this.startTimer()
-    }
+  handleStart = () => {
+    const { todo, startTimer } = this.props
+    startTimer(todo.id)
   }
 
-  componentWillUnmount() {
-    clearInterval(this.timer)
-  }
-
-  handlePlayButtonClick() {
-    const { setNewTodos, todo } = this.props
-
-    setNewTodos({ ...todo, isRun: true })
-    this.startTimer()
+  handleStop = () => {
+    const { todo, stopTimer } = this.props
+    stopTimer(todo.id)
   }
 
   handleToggle = (id) => {
@@ -62,24 +51,6 @@ class Task extends Component {
     }
   }
 
-  startTimer() {
-    this.timer = setInterval(() => {
-      const { todo, setNewTodos } = this.props
-      const { seconds, minutes } = todo
-      if (seconds === 59) {
-        setNewTodos({ ...todo, minutes: minutes + 1, seconds: 0 })
-      } else {
-        setNewTodos({ ...todo, seconds: seconds + 1 })
-      }
-    }, 1000)
-  }
-
-  stopTimer() {
-    const { setNewTodos, todo } = this.props
-    setNewTodos({ ...todo, isRun: false })
-    clearInterval(this.timer)
-  }
-
   render() {
     const { todo, removeTask, setTodoEditing, todoEditing } = this.props
     const { editingText } = this.state
@@ -106,7 +77,7 @@ class Task extends Component {
             />
             <label htmlFor={todo.id}>
               <span className="description">{todo.task}</span>
-              <Timer todo={todo} onStart={this.handlePlayButtonClick} onStop={this.stopTimer} />
+              <Timer todo={todo} onStart={this.handleStart} onStop={this.handleStop} />
               <span className="created">
                 {' '}
                 {`created ${formatDistanceToNow(todo.date, {
@@ -147,7 +118,6 @@ Task.propTypes = {
   todoEditing: PropTypes.string,
   setTodoEditing: PropTypes.func.isRequired,
   setEditingText: PropTypes.func.isRequired,
-  setNewTodos: PropTypes.func.isRequired,
 }
 
 Task.defaultProps = {
