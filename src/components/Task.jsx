@@ -9,8 +9,20 @@ class Task extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      editingText: '',
+      todoEditing: null,
+      editingText: props.todo.task,
     }
+    this.editInputRef = React.createRef()
+  }
+
+  componentDidMount() {
+    document.addEventListener('mousedown', this.handleClickOutside)
+    document.addEventListener('keydown', this.handleEscape)
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('mousedown', this.handleClickOutside)
+    document.removeEventListener('keydown', this.handleEscape)
   }
 
   handleStart = () => {
@@ -33,32 +45,49 @@ class Task extends Component {
   }
 
   updateTodos = (id) => {
-    const { todos, setTodos, setTodoEditing, setEditingText, todo } = this.props
+    const { todos, setTodos } = this.props
     const { editingText } = this.state
     const updateTodosList = [...todos].map((item) => {
-      if (item.id === id) todo.task = editingText
+      // eslint-disable-next-line no-param-reassign
+      if (item.id === id) item.task = editingText
       return item
     })
-
     setTodos(updateTodosList)
-    setTodoEditing(null)
-    setEditingText('')
+    this.setState({ todoEditing: null })
   }
 
-  editTodo = (e, id) => {
+  editTodo = (e) => {
+    const { todo } = this.props
     if (e.key === 'Enter') {
-      this.updateTodos(id)
+      this.updateTodos(todo.id)
+    } else if (e.key === 'Escape') {
+      this.setState({ todoEditing: null, editingText: todo.task })
+    }
+  }
+
+  handleClickOutside = (e) => {
+    const { todo } = this.props
+    if (this.editInputRef.current && !this.editInputRef.current.contains(e.target)) {
+      this.setState({ todoEditing: null, editingText: todo.task })
+    }
+  }
+
+  handleEscape = (e) => {
+    const { todo } = this.props
+    if (e.key === 'Escape') {
+      this.setState({ todoEditing: null, editingText: todo.task })
     }
   }
 
   render() {
-    const { todo, removeTask, setTodoEditing, todoEditing } = this.props
-    const { editingText } = this.state
+    const { todo, removeTask } = this.props
+    const { editingText, todoEditing } = this.state
 
     return (
       <li className={todo.complete ? 'completed' : 'view'}>
         {todoEditing === todo.id ? (
           <input
+            ref={this.editInputRef}
             onKeyDown={(e) => this.editTodo(e, todo.id)}
             type="text"
             className="new-todo"
@@ -90,7 +119,7 @@ class Task extends Component {
             <button
               type="button"
               aria-label="Save"
-              onClick={() => setTodoEditing(todo.id)}
+              onClick={() => this.setState({ todoEditing: todo.id })}
               className="icon icon-edit"
             />
             <button type="button" aria-label="Save" className="icon icon-destroy" onClick={() => removeTask(todo.id)} />
@@ -115,15 +144,11 @@ Task.propTypes = {
   }),
   setTodos: PropTypes.func.isRequired,
   removeTask: PropTypes.func.isRequired,
-  todoEditing: PropTypes.string,
-  setTodoEditing: PropTypes.func.isRequired,
-  setEditingText: PropTypes.func.isRequired,
 }
 
 Task.defaultProps = {
   todos: [],
   todo: {},
-  todoEditing: null,
 }
 
 export default Task

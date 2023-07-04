@@ -10,8 +10,6 @@ class App extends Component {
     this.state = {
       todos: [],
       displayTodos: [],
-      todoEditing: null,
-      editingText: '',
     }
     this.timers = {}
   }
@@ -57,7 +55,8 @@ class App extends Component {
         todos: prevState.todos.map((todo) => {
           if (todo.id === id && todo.isRun) {
             const { minutes, seconds } = todo
-            if (minutes === 0 && seconds === 0) {
+            let totalSeconds = minutes * 60 + seconds
+            if (totalSeconds === 0) {
               clearInterval(this.timers[id])
               if (todo.id === id) {
                 return {
@@ -67,10 +66,16 @@ class App extends Component {
               }
               delete this.timers[id]
             }
-            if (seconds === 0) {
-              return { ...todo, minutes: minutes - 1, seconds: 59 }
+            totalSeconds -= 1
+
+            const updatedMinutes = Math.floor(totalSeconds / 60)
+            const updatedSeconds = totalSeconds % 60
+
+            return {
+              ...todo,
+              minutes: updatedMinutes,
+              seconds: updatedSeconds,
             }
-            return { ...todo, seconds: seconds - 1 }
           }
           return todo
         }),
@@ -146,16 +151,12 @@ class App extends Component {
   }
 
   render() {
-    const { todos, displayTodos, todoEditing, editingText } = this.state
+    const { todos, displayTodos } = this.state
 
     return (
       <section className="todoapp">
         <NewTaskForm addTask={this.addTask} />
         <TaskList
-          todoEditing={todoEditing}
-          setTodoEditing={(todo) => this.setState({ todoEditing: todo })}
-          setEditingText={(text) => this.setState({ editingText: text })}
-          editingText={editingText}
           displayTodos={displayTodos}
           todos={todos}
           removeTask={this.removeTask}
