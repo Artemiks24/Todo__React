@@ -1,42 +1,16 @@
-import React, { Component } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import en from 'date-fns/locale/en-AU'
 import PropTypes from 'prop-types'
 
 import Timer from './Timer'
 
-class Task extends Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      todoEditing: null,
-      editingText: props.todo.task,
-    }
-    this.editInputRef = React.createRef()
-  }
+function Task({ todos, todo, setTodos, removeTask, startTimer, stopTimer }) {
+  const [todoEditing, setTodoEditing] = useState(null)
+  const [editingText, setEditingText] = useState(todo.task)
 
-  componentDidMount() {
-    document.addEventListener('mousedown', this.handleClickOutside)
-    document.addEventListener('keydown', this.handleEscape)
-  }
-
-  componentWillUnmount() {
-    document.removeEventListener('mousedown', this.handleClickOutside)
-    document.removeEventListener('keydown', this.handleEscape)
-  }
-
-  handleStart = () => {
-    const { todo, startTimer } = this.props
-    startTimer(todo.id)
-  }
-
-  handleStop = () => {
-    const { todo, stopTimer } = this.props
-    stopTimer(todo.id)
-  }
-
-  handleToggle = (id) => {
-    const { todos, setTodos } = this.props
+  const editInputRef = useRef(null)
+  const handleToggle = (id) => {
     setTodos([
       ...todos.map((item) =>
         item.id === id ? { ...item, complete: !item.complete, checked: !item.checked } : { ...item }
@@ -44,90 +18,96 @@ class Task extends Component {
     ])
   }
 
-  updateTodos = (id) => {
-    const { todos, setTodos } = this.props
-    const { editingText } = this.state
+  const handleStart = () => {
+    startTimer(todo.id)
+  }
+
+  const handleStop = () => {
+    stopTimer(todo.id)
+  }
+
+  /*  eslint no-param-reassign: "error" */ const updateTodos = (id) => {
     const updateTodosList = [...todos].map((item) => {
-      // eslint-disable-next-line no-param-reassign
       if (item.id === id) item.task = editingText
       return item
     })
     setTodos(updateTodosList)
-    this.setState({ todoEditing: null })
+    setTodoEditing(null)
+    setEditingText(editingText)
   }
 
-  editTodo = (e) => {
-    const { todo } = this.props
+  const editTodo = (e) => {
     if (e.key === 'Enter') {
-      this.updateTodos(todo.id)
+      updateTodos(todo.id)
     } else if (e.key === 'Escape') {
-      this.setState({ todoEditing: null, editingText: todo.task })
+      setTodoEditing(null)
+      setEditingText(todo.task)
     }
   }
 
-  handleClickOutside = (e) => {
-    const { todo } = this.props
-    if (this.editInputRef.current && !this.editInputRef.current.contains(e.target)) {
-      this.setState({ todoEditing: null, editingText: todo.task })
+  const handleClickOutside = (e) => {
+    if (editInputRef.current && !editInputRef.current.contains(e.target)) {
+      updateTodos(todo.id)
     }
   }
 
-  handleEscape = (e) => {
-    const { todo } = this.props
+  const handleEscape = (e) => {
     if (e.key === 'Escape') {
-      this.setState({ todoEditing: null, editingText: todo.task })
+      setTodoEditing(null)
+      setEditingText(todo.task)
     }
   }
 
-  render() {
-    const { todo, removeTask } = this.props
-    const { editingText, todoEditing } = this.state
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleEscape)
 
-    return (
-      <li className={todo.complete ? 'completed' : 'view'}>
-        {todoEditing === todo.id ? (
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <li className={todo.complete ? 'completed' : 'view'}>
+      {todoEditing === todo.id ? (
+        <input
+          ref={editInputRef}
+          onKeyDown={editTodo}
+          type="text"
+          className="new-todo"
+          placeholder="Update your task"
+          onChange={(e) => setEditingText(e.target.value)}
+          value={editingText}
+        />
+      ) : (
+        <div className="view">
           <input
-            ref={this.editInputRef}
-            onKeyDown={(e) => this.editTodo(e, todo.id)}
-            type="text"
-            className="new-todo"
-            placeholder="Update your task"
-            onChange={(e) => this.setState({ editingText: e.target.value })}
-            value={editingText}
+            id={todo.id}
+            onChange={() => handleToggle(todo.id)}
+            checked={todo.checked}
+            className="toggle"
+            type="checkbox"
           />
-        ) : (
-          <div className="view">
-            <input
-              id={todo.id}
-              onChange={() => this.handleToggle(todo.id)}
-              checked={todo.checked}
-              className="toggle"
-              type="checkbox"
-            />
-            <label htmlFor={todo.id}>
-              <span className="description">{todo.task}</span>
-              <Timer todo={todo} onStart={this.handleStart} onStop={this.handleStop} />
-              <span className="created">
-                {' '}
-                {`created ${formatDistanceToNow(todo.date, {
-                  includeSeconds: true,
-                  locale: en,
-                  addSuffix: true,
-                })}`}
-              </span>
-            </label>
-            <button
-              type="button"
-              aria-label="Save"
-              onClick={() => this.setState({ todoEditing: todo.id })}
-              className="icon icon-edit"
-            />
-            <button type="button" aria-label="Save" className="icon icon-destroy" onClick={() => removeTask(todo.id)} />
-          </div>
-        )}
-      </li>
-    )
-  }
+          <label htmlFor={todo.id}>
+            <span className="description">{todo.task}</span>
+            <Timer handleStart={handleStart} handleStop={handleStop} todo={todo} />
+            <span className="created">
+              {' '}
+              {`created ${formatDistanceToNow(todo.date, {
+                includeSeconds: true,
+                locale: en,
+                addSuffix: true,
+              })}`}
+            </span>
+          </label>
+          <button type="button" aria-label="Save" onClick={() => setTodoEditing(todo.id)} className="icon icon-edit" />
+          <button type="button" aria-label="Save" className="icon icon-destroy" onClick={() => removeTask(todo.id)} />
+        </div>
+      )}
+    </li>
+  )
 }
 
 Task.propTypes = {
@@ -137,9 +117,6 @@ Task.propTypes = {
     complete: PropTypes.bool,
     id: PropTypes.string,
     task: PropTypes.string,
-    seconds: PropTypes.number,
-    minutes: PropTypes.number,
-    isRun: PropTypes.bool,
     date: PropTypes.instanceOf(Date),
   }),
   setTodos: PropTypes.func.isRequired,

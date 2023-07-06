@@ -1,89 +1,70 @@
-import React, { Component } from 'react'
+import { useState } from 'react'
 import PropTypes from 'prop-types'
 
-class NewTaskForm extends Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      userInput: '',
-      seconds: 0,
-      minutes: 0,
-    }
+function NewTaskForm({ addTask }) {
+  const [userInput, setUserInput] = useState('')
+  const [seconds, setSeconds] = useState(0)
+  const [minutes, setMinutes] = useState(0)
+
+  const handleChange = (e) => {
+    setUserInput(e.currentTarget.value)
   }
 
-  handleChange = (e) => {
-    this.setState({
-      userInput: e.currentTarget.value,
-    })
+  const handleChangeSec = (e) => {
+    setSeconds(parseInt(e.currentTarget.value, 10))
   }
 
-  handleChangeSec = (e) => {
-    this.setState({
-      seconds: parseInt(e.currentTarget.value, 10),
-    })
+  const handleChangeMin = (e) => {
+    setMinutes(parseInt(e.currentTarget.value, 10))
   }
 
-  handleChangeMin = (e) => {
-    this.setState({
-      minutes: parseInt(e.currentTarget.value, 10),
-    })
-  }
-
-  handleSubmit = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
-    const { addTask } = this.props
-    const { userInput, seconds, minutes } = this.state
     addTask(userInput, seconds, minutes)
-    this.setState({
-      userInput: '',
-      seconds: 0,
-      minutes: 0,
-    })
+    setUserInput('')
+    setSeconds(0)
+    setMinutes(0)
   }
 
-  handleKeyPress = (e) => {
+  const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
-      this.handleSubmit(e)
+      handleSubmit(e)
     }
   }
 
-  render() {
-    const { userInput, seconds, minutes } = this.state
-
-    return (
-      <form className="header">
-        <h1>Todos</h1>
-        <input
-          onSubmit={this.handleSubmit}
-          value={userInput}
-          onChange={this.handleChange}
-          onKeyDown={this.handleKeyPress}
-          className="new-todo"
-          placeholder="What needs to be done?"
-        />
-        <input
-          type="number"
-          value={minutes}
-          min={0}
-          max={59}
-          className="new-todo-form__timer"
-          onChange={this.handleChangeMin}
-          onKeyDown={this.handleKeyPress}
-          placeholder="Min"
-        />
-        <input
-          type="number"
-          value={seconds}
-          min={0}
-          max={59}
-          className="new-todo-form__timer"
-          onChange={this.handleChangeSec}
-          onKeyDown={this.handleKeyPress}
-          placeholder="Sec"
-        />
-      </form>
-    )
-  }
+  return (
+    <form className="header">
+      <h1>Todos</h1>
+      <input
+        onSubmit={handleSubmit}
+        value={userInput}
+        onChange={handleChange}
+        onKeyDown={handleKeyPress}
+        className="new-todo"
+        placeholder="What needs to be done?"
+      />
+      <input
+        type="number"
+        value={minutes}
+        min={0}
+        max={59}
+        className="new-todo-form__timer"
+        onChange={handleChangeMin}
+        onKeyDown={handleKeyPress}
+        placeholder="Min"
+      />
+      <input
+        type="number"
+        value={seconds}
+        min={0}
+        max={59}
+        className="new-todo-form__timer"
+        onChange={handleChangeSec}
+        onKeyDown={handleKeyPress}
+        placeholder="Sec"
+      />
+    </form>
+  )
 }
 
 NewTaskForm.propTypes = {

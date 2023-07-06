@@ -1,21 +1,31 @@
-import React, { Component } from 'react'
+import { useState, useEffect } from 'react'
 
 import NewTaskForm from './components/NewTaskForm'
 import TaskList from './components/TaskList'
 
-class App extends Component {
-  constructor(props) {
-    super(props)
+function App() {
+  const [todos, setTodos] = useState([])
+  const [timers, setTimers] = useState({})
+  const [filterMode, setFilterMode] = useState('All')
 
-    this.state = {
-      todos: [],
-      displayTodos: [],
-    }
-    this.timers = {}
+  const handleFilter = (e) => {
+    const filter = e.target.innerText
+    setFilterMode(filter)
   }
 
-  // eslint-disable-next-line react/sort-comp
-  addTask = (userInput, seconds, minutes) => {
+  const filteredTodos = () => {
+    if (filterMode === 'Active') {
+      return todos.filter((el) => !el.complete)
+    }
+    if (filterMode === 'Completed') {
+      return todos.filter((el) => el.complete)
+    }
+    return todos
+  }
+
+  const todosFiltered = filteredTodos()
+
+  const addTask = (userInput, seconds, minutes) => {
     if (userInput && (seconds || minutes)) {
       const newItem = {
         id: Math.random().toString(36).substr(2, 9),
@@ -27,10 +37,7 @@ class App extends Component {
         seconds,
         minutes,
       }
-
-      this.setState((prevState) => ({
-        todos: [...prevState.todos, newItem],
-      }))
+      setTodos((prevState) => [...prevState, newItem])
     } else {
       const newItem = {
         id: Math.random().toString(36).substr(2, 9),
@@ -43,29 +50,26 @@ class App extends Component {
         minutes: 10,
       }
 
-      this.setState((prevState) => ({
-        todos: [...prevState.todos, newItem],
-      }))
+      setTodos((prevState) => [...prevState, newItem])
     }
   }
 
-  timerUpdate = (id) => {
+  const timerUpdate = (id) => {
     const timerId = setInterval(() => {
-      this.setState((prevState) => ({
-        todos: prevState.todos.map((todo) => {
+      setTodos((prevState) =>
+        prevState.map((todo) => {
           if (todo.id === id && todo.isRun) {
             const { minutes, seconds } = todo
             let totalSeconds = minutes * 60 + seconds
+
             if (totalSeconds === 0) {
-              clearInterval(this.timers[id])
-              if (todo.id === id) {
-                return {
-                  ...todo,
-                  isRun: false,
-                }
+              clearInterval(timerId)
+              return {
+                ...todo,
+                isRun: false,
               }
-              delete this.timers[id]
             }
+
             totalSeconds -= 1
 
             const updatedMinutes = Math.floor(totalSeconds / 60)
@@ -77,17 +81,17 @@ class App extends Component {
               seconds: updatedSeconds,
             }
           }
+
           return todo
-        }),
-      }))
+        })
+      )
     }, 1000)
 
-    this.timers[id] = timerId
+    timers[id] = timerId
   }
-
-  startTimer = (id) => {
-    this.setState((prevState) => ({
-      todos: prevState.todos.map((todo) => {
+  const startTimer = (id) => {
+    setTodos((prevState) =>
+      prevState.map((todo) => {
         if (todo.id === id) {
           return {
             ...todo,
@@ -95,16 +99,15 @@ class App extends Component {
           }
         }
         return todo
-      }),
-    }))
-    this.timerUpdate(id)
+      })
+    )
+    timerUpdate(id)
   }
 
-  stopTimer = (id) => {
-    clearInterval(this.timers[id])
-
-    this.setState((prevState) => ({
-      todos: prevState.todos.map((todo) => {
+  const stopTimer = (id) => {
+    clearInterval(timers[id])
+    setTodos((prevState) =>
+      prevState.map((todo) => {
         if (todo.id === id) {
           return {
             ...todo,
@@ -112,63 +115,47 @@ class App extends Component {
           }
         }
         return todo
-      }),
-    }))
+      })
+    )
 
-    delete this.timers[id]
+    setTimers((prevTimers) => ({ ...prevTimers, [id]: null }))
   }
 
-  componentDidMount() {
-    // eslint-disable-next-line react/destructuring-assignment
-    this.state.todos.forEach((todo) => {
+  useEffect(() => {
+    todos.forEach((todo) => {
       if (todo.isRun) {
-        this.startTimer(todo.id)
+        startTimer(todo.id)
       }
     })
+
+    return () => {
+      if (timers && Object.keys(timers).length > 0) {
+        Object.values(timers).forEach((timerId) => {
+          clearInterval(timerId)
+        })
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const removeTask = (id) => {
+    setTodos([...todos.filter((todo) => todo.id !== id)])
   }
 
-  componentWillUnmount() {
-    Object.values(this.timers).forEach((timerId) => {
-      clearInterval(timerId)
-    })
-  }
-
-  removeTask = (id) => {
-    this.setState((prevState) => ({
-      todos: prevState.todos.filter((todo) => todo.id !== id),
-    }))
-  }
-
-  setNewTodos = (todo) => {
-    this.setState((prevState) => ({
-      todos: prevState.todos.map((currentTodo) => {
-        if (currentTodo.id === todo.id) {
-          return todo
-        }
-        return currentTodo
-      }),
-    }))
-  }
-
-  render() {
-    const { todos, displayTodos } = this.state
-
-    return (
-      <section className="todoapp">
-        <NewTaskForm addTask={this.addTask} />
-        <TaskList
-          displayTodos={displayTodos}
-          todos={todos}
-          removeTask={this.removeTask}
-          setTodos={(updatedTodos) => this.setState({ todos: updatedTodos })}
-          setDisplayTodos={(updatedTodos) => this.setState({ displayTodos: updatedTodos })}
-          setNewTodos={this.setNewTodos}
-          startTimer={this.startTimer}
-          stopTimer={this.stopTimer}
-        />
-      </section>
-    )
-  }
+  return (
+    <section className="todoapp">
+      <NewTaskForm addTask={addTask} />
+      <TaskList
+        todos={todosFiltered}
+        removeTask={removeTask}
+        setTodos={setTodos}
+        startTimer={startTimer}
+        stopTimer={stopTimer}
+        handleFilter={handleFilter}
+        filterMode={filterMode}
+      />
+    </section>
+  )
 }
 
 export default App

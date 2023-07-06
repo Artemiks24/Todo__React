@@ -1,59 +1,35 @@
-import React, { Component } from 'react'
+import { useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
 
-import { getActiveTodos } from '../helper'
+import getActiveTodos from '../helper'
 
 import TaskFilters from './TasksFilter'
 
-class Footer extends Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      activeLengths: 0,
-    }
-  }
+function Footer({ todos, setTodos, filterMode, handleFilter }) {
+  const [activeLengths, setActiveLengths] = useState(0)
 
-  componentDidMount() {
-    const { todos } = this.props
-    this.setState({
-      activeLengths: getActiveTodos(todos).length,
-    })
-  }
+  useEffect(() => {
+    setActiveLengths(getActiveTodos(todos).length)
+  }, [todos, setActiveLengths])
 
-  componentDidUpdate(prevProps) {
-    const { todos } = this.props
-    if (todos !== prevProps.todos) {
-      this.setState({
-        activeLengths: getActiveTodos(todos).length,
-      })
-    }
-  }
-
-  clearComplete = () => {
-    const { setTodos, todos } = this.props
+  const clearComplete = () => {
     setTodos(getActiveTodos(todos))
   }
 
-  render() {
-    const { todos, setDisplayTodos } = this.props
-    const { activeLengths } = this.state
-
-    return (
-      <footer className="footer">
-        <span className="todo-count"> {activeLengths} items left</span>
-        <button type="button" className="clear-completed" onClick={this.clearComplete}>
-          Clear completed
-        </button>
-        <TaskFilters setDisplayTodos={setDisplayTodos} todos={todos} />
-      </footer>
-    )
-  }
+  return (
+    <footer className="footer">
+      <span className="todo-count"> {activeLengths} items left</span>
+      <button type="button" className="clear-completed" onClick={clearComplete}>
+        Clear completed
+      </button>
+      <TaskFilters handleFilter={handleFilter} filterMode={filterMode} todos={todos} />
+    </footer>
+  )
 }
 
 Footer.propTypes = {
   todos: PropTypes.arrayOf(PropTypes.shape({})),
   setTodos: PropTypes.func.isRequired,
-  setDisplayTodos: PropTypes.func.isRequired,
 }
 
 Footer.defaultProps = {
